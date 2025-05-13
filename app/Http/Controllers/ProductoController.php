@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 use App\Models\Producto;
+use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -10,18 +11,19 @@ class ProductoController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth'); // Requiere login para todas las rutas
+        $this->middleware('auth');
     }
 
     public function index()
     {
-        $productos = Producto::all();
+        $productos = Producto::with('categoria')->get();
         return view('productos.index', compact('productos'));
     }
 
     public function create()
     {
-        return view('productos.create');
+        $categorias = Categoria::all();
+        return view('productos.create', compact('categorias'));
     }
 
     public function store(Request $request)
@@ -29,15 +31,18 @@ class ProductoController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'precio' => 'required|numeric|min:0',
+            'categoria_id' => 'nullable|exists:categorias,id',
         ]);
+
         Producto::create($request->all());
         return redirect()->route('productos.index');
     }
 
     public function edit($id)
     {
-        $producto = Producto::find($id);
-        return view('productos.edit', compact('producto'));
+        $producto = Producto::findOrFail($id);
+        $categorias = Categoria::all();
+        return view('productos.edit', compact('producto', 'categorias'));
     }
 
     public function update(Request $request, $id)
@@ -45,14 +50,18 @@ class ProductoController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'precio' => 'required|numeric|min:0',
+            'categoria_id' => 'nullable|exists:categorias,id',
         ]);
-        Producto::find($id)->update($request->all());
+
+        $producto = Producto::findOrFail($id);
+        $producto->update($request->all());
         return redirect()->route('productos.index');
     }
 
     public function destroy($id)
     {
-        Producto::find($id)->delete();
+        $producto = Producto::findOrFail($id);
+        $producto->delete();
         return redirect()->route('productos.index');
     }
 }
